@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('login', [AuthApiController::class, 'login']);
 Route::post('register', [AuthApiController::class, 'register']);
+Route::post('savePic', [AuthApiController::class, 'pic']);
 
 Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('logout', [AuthApiController::class, 'logout']);

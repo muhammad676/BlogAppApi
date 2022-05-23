@@ -201,4 +201,17 @@ class AuthApiController extends Controller
 
         return response()->json(['user' => $user]);
     }
+
+    public function pic(Request $request)
+    {
+        $photoName = time().'.'.$request->photo->extension();
+        $request->photo->storeAs('public/profiles', $photoName);
+
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Picture Has Been Saved',
+            'data' => $photoName
+        ]);
+    }
 }
