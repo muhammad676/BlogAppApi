@@ -7,6 +7,7 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class PostsController extends Controller
@@ -19,12 +20,23 @@ class PostsController extends Controller
 
         //check if post has photo
         if ($request->photo != '') {
-            $photoName = time().'.'.$request->photo->extension();
-            $request->photo->storeAs('public/posts', $photoName);
+//            $photoName = time().'.'.$request->photo->extension();
+//            $request->photo->storeAs('public/posts', $photoName);
 //            //choose a unique name for photo
 //            $photo = time() . '.jpg';
 //            file_put_contents('storage/posts/'.$photo,base64_decode($request->photo));
-            $post->photo = $photoName;
+            $storage = app('firebase.storage');
+            $defaultBucket = $storage->getBucket();
+            $image = $request->file('photo');
+            $name = (string) Str::uuid().".".$image->getClientOriginalExtension(); // use Illuminate\Support\Str;
+            $pathName = $image->getPathName();
+            $file = fopen($pathName, 'r');
+            $image_url = 'https://storage.googleapis.com/'.env('FIREBASE_PROJECT_ID').'.appspot.com/'.$name;
+            $object = $defaultBucket->upload($file, [
+                'name' => $name,
+                'predefinedAcl' => 'publicRead'
+            ]);
+            $post->photo = $image_url;
         }
 
         $post->save();
@@ -54,13 +66,25 @@ class PostsController extends Controller
                 'status_code' => Response::HTTP_UNAUTHORIZED
             ], Response::HTTP_UNAUTHORIZED);
         } else {
-            $photoName = '';
+            $name = '';
             //check if user provided photo
             if ($request->photo != '' OR $request->photo != null)
             {
-                $photoName = time().'.'.$request->photo->extension();
-                $request->photo->storeAs('public/posts', $photoName);
-                $post->photo = $photoName;
+//                $photoName = time().'.'.$request->photo->extension();
+//                $request->photo->storeAs('public/posts', $photoName);
+
+                $storage = app('firebase.storage');
+                $defaultBucket = $storage->getBucket();
+                $image = $request->file('photo');
+                $name = (string) Str::uuid().".".$image->getClientOriginalExtension(); // use Illuminate\Support\Str;
+                $pathName = $image->getPathName();
+                $file = fopen($pathName, 'r');
+                $image_url = 'https://storage.googleapis.com/'.env('FIREBASE_PROJECT_ID').'.appspot.com/'.$name;
+                $object = $defaultBucket->upload($file, [
+                    'name' => $name,
+                    'predefinedAcl' => 'publicRead'
+                ]);
+                $post->photo = $image_url;
             }
             $post->desc = $request->desc;
             $post->update();
@@ -91,10 +115,10 @@ class PostsController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         } else {
             //check if post has photo to delete
-            if ($post->photo != '')
-            {
-                Storage::delete('public/posts/'.$post->photo);
-            }
+//            if ($post->photo != '')
+//            {
+//                Storage::delete('public/posts/'.$post->photo);
+//            }
             $post->delete();
             return response()->json([
                 'success' => true,

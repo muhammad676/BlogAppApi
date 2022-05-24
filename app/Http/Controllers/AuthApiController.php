@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -125,17 +126,31 @@ class AuthApiController extends Controller
         $user = User::find(Auth::user()->id);
         $user->firstname = $request->firstname;
         $user->lastname = $request->lastname;
-        $photoName = '';
+        $name = '';
         //check if user provided photo
         if ($request->photo != '' OR $request->photo != null)
         {
-            $photoName = time().'.'.$request->photo->extension();
-            $request->photo->storeAs('public/profiles', $photoName);
-//            //user time for photo name to prevent name duplication
-//            $photo = time().'.jpg';
-//            //decode photo string and save to stroage/profiles
-//            file_put_contents('storage/profiles/'.$photo,base64_decode($request->photo));
-            $user->photo = $photoName;
+//            $photoName = time().'.'.$request->photo->extension();
+//            $request->photo->storeAs('public/profiles', $photoName);
+////            //user time for photo name to prevent name duplication
+////            $photo = time().'.jpg';
+////            //decode photo string and save to stroage/profiles
+////            file_put_contents('storage/profiles/'.$photo,base64_decode($request->photo));
+///
+///
+            $storage = app('firebase.storage');
+            $defaultBucket = $storage->getBucket();
+            $image = $request->file('photo');
+            $name = (string) Str::uuid().".".$image->getClientOriginalExtension(); // use Illuminate\Support\Str;
+            $pathName = $image->getPathName();
+            $file = fopen($pathName, 'r');
+            $image_url = 'https://storage.googleapis.com/'.env('FIREBASE_PROJECT_ID').'.appspot.com/'.$name;
+            $object = $defaultBucket->upload($file, [
+                'name' => $name,
+                'predefinedAcl' => 'publicRead'
+            ]);
+
+            $user->photo = $image_url;
         }
         $user->update();
 
@@ -166,17 +181,29 @@ class AuthApiController extends Controller
         $user = User::find(Auth::user()->id);
         $user->firstname = $request->firstname;
         $user->lastname = $request->lastname;
-        $photoName = '';
+        $name = '';
         //check if user provided photo
         if ($request->photo != '' OR $request->photo != null)
         {
-            $photoName = time().'.'.$request->photo->extension();
-            $request->photo->storeAs('public/profiles', $photoName);
+//            $photoName = time().'.'.$request->photo->extension();
+//            $request->photo->storeAs('public/profiles', $photoName);
 //            //user time for photo name to prevent name duplication
 //            $photo = time().'.jpg';
 //            //decode photo string and save to stroage/profiles
 //            file_put_contents('storage/profiles/'.$photo,base64_decode($request->photo));
-            $user->photo = $photoName;
+
+            $storage = app('firebase.storage');
+            $defaultBucket = $storage->getBucket();
+            $image = $request->file('photo');
+            $name = (string) Str::uuid().".".$image->getClientOriginalExtension(); // use Illuminate\Support\Str;
+            $pathName = $image->getPathName();
+            $file = fopen($pathName, 'r');
+            $image_url = 'https://storage.googleapis.com/'.env('FIREBASE_PROJECT_ID').'.appspot.com/'.$name;
+            $object = $defaultBucket->upload($file, [
+                'name' => $name,
+                'predefinedAcl' => 'publicRead'
+            ]);
+            $user->photo = $image_url;
         }
         $user->update();
 
@@ -204,14 +231,30 @@ class AuthApiController extends Controller
 
     public function pic(Request $request)
     {
-        $photoName = time().'.'.$request->photo->extension();
-        $request->photo->storeAs('public/profiles', $photoName);
+//        $photoName = time().'.'.$request->photo->extension();
+//        $request->photo->storeAs('public/profiles', $photoName);
+//        app('firebase.firestore')->database()->collection('Images')->document($photoName);
+//        $firebase_storage_path = 'images/';
+//        app('firebase.storage')->getBucket()->upload($request->file('photo'), ['name' => $firebase_storage_path . $photoName]);
 
+
+
+        $storage = app('firebase.storage');
+        $defaultBucket = $storage->getBucket();
+        $image = $request->file('photo');
+        $name = (string) Str::uuid().".".$image->getClientOriginalExtension(); // use Illuminate\Support\Str;
+        $pathName = $image->getPathName();
+        $file = fopen($pathName, 'r');
+        $image_url = 'https://storage.googleapis.com/'.env('FIREBASE_PROJECT_ID').'.appspot.com/'.$name;
+        $object = $defaultBucket->upload($file, [
+            'name' => $name,
+            'predefinedAcl' => 'publicRead'
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Picture Has Been Saved',
-            'data' => $photoName
+            'data' => $name
         ]);
     }
 }
